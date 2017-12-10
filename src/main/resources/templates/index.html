@@ -43,8 +43,8 @@
 
       function createVideo(id,src){
 	var html =  '';
-	html += '<div class="col-md-6" id="stream-'+id+'">';
-      	html += '<video style="width:100%" src="'+src+'" autoplay="autoplay" />';
+	html += '<div class="col-md-6" id="stream-'+id+'" >';
+      	html += '<video style="width:100%" src="'+src+'" autoplay="autoplay" ' + (id == 'this' ? 'muted' : '')+  '/>';
 	html += '</div>';
 	$("#streamContainer").append($(html));
       }
@@ -139,17 +139,11 @@
             onStreamArrived(id, e.stream);
         };
 
-	peerConnection.onconnectionstatechange = function(event) {
-		console.log('connectionState',event);		
-	  switch(peerConnection.connectionState) {
-	
-	    case "disconnected":
-	    case "failed":
-	    case "closed":
-	    	  $('#stream-'+id).remove();
-	    break;
-	  }
-	};
+	peerConnection.oniceconnectionstatechange = function() {
+	    if(peerConnection.iceConnectionState == 'disconnected') {
+		    	  $('#stream-'+id).remove();
+	    }
+	}
 
 
         peerConnections[id] = peerConnection;
