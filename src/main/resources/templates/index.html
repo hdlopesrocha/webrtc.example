@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Bare - Start Bootstrap Template</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <style>
+      body {
+        padding-top: 54px;
+      }
+      @media (min-width: 992px) {
+        body {
+          padding-top: 56px;
+        }
+      }
+    </style>
+
+
+    <script src="/jquery/jquery.min.js"></script>
+
+    <script type="text/javascript">
+      var webSocket;
+      var peerConnections = {};
+      var streams = {};
+
+      var mediaRequest = {
+        audio:true,
+        video:true
+      };
+
+      var constraints = {
+        'offerToReceiveAudio':true,
+        'offerToReceiveVideo':true
+      };
+
+      function onStreamArrived(id, stream){
+          var src = window.URL.createObjectURL(stream);
+          streams[id] = stream;
+          console.log(stream);
+      }
+
+      function startSignalingProtocol(){
+          webSocket.send(JSON.stringify({
+             type:'ping'
+          }));
+      }
+
+
+      function getUserMedia(){
+          navigator.mediaDevices.getUserMedia(mediaRequest).then(function(stream) {
+            onStreamArrived('this', stream);
+            startSignalingProtocol();
+          }.bind(this)).catch(console.log);
+      }
+
+      function createOffer(id, stream){
+          var peerConnection = peerConnections[id];
+          peerConnection.addStream(stream);
+          peerConnection.createOffer(function (lsd) {
+              console.log("createOfferToSendReceive",lsd);
+              peerConnection.setLocalDescription(lsd, function() {
+                  webSocket.send(JSON.stringify({
+                      cmd : "offer",
+                      data : lsd
+                  }));
+              }, console.log);
+            }, console.log,constraints);
+      }
+
+
+      function createPeerConnection(id){
+        var peerConnection = new RTCPeerConnection({
+            iceServers : [
+                {
+                    urls : "stun:stun.iptel.org"
+                },
+                {
+                    urls : "stun:stun.ekiga.net"
+                },
+                {
+                    urls : "stun:stun.fwdnet.net"
+                },
+                {
+                    urls : "stun:stun.ideasip.com"
+                }
+            ]
+        });
+
+        // stun -i wlan0 -p 3478 -v citysdk.tagus.ist.utl.pt
+        // stun -i wlan0 -p 19302 -v 64.233.184.127
+        peerConnection.onicecandidate = function(event) {
+            if (event.candidate) {
+                var msg = {
+                    cmd : "iceCandidate",
+                    candidate : event.candidate
+                }
+                webSocket.send(JSON.stringify(msg));
+            }
+        }
+
+        peerConnection.onaddstream = function (e) {
+            onStreamArrived(e.stream);
+        };
+
+        peerConnections[id] = peerConnection;
+      }
+
+
+      $( document ).ready(function() {
+        if ("WebSocket" in window){
+           webSocket = new WebSocket("ws://localhost:8080/ws");
+
+           webSocket.onopen = function() {
+              getUserMedia();
+           };
+
+
+           webSocket.onmessage = function (evt) {
+              console.log(JSON.stringify(received_msg));
+              var received_msg = JSON.parse(evt.data);
+              switch(received_msg.type){
+                case 'ping':
+                  createPeerConnection(received_msg.from);
+                  webSocket.send(JSON.stringify({
+                     to:received_msg.from,
+                     type:'pong'
+                  }));
+                break;
+                case 'pong':
+                  createPeerConnection(received_msg.from);
+                  createOffer(received_msg.from,streams['this']);
+                break;
+              }
+           };
+
+           webSocket.onclose = function() {
+              alert("Connection is closed...");
+           };
+
+           window.onbeforeunload = function(event) {
+              webSocket.close();
+           };
+        }
+        else {
+           // The browser doesn't support WebSocket
+           alert("WebSocket NOT supported by your Browser!");
+        }
+      });
+
+	    </script>
+
+  </head>
+
+  <body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+      <div class="container">
+        <a class="navbar-brand" href="#">Start Bootstrap</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item active">
+              <a class="nav-link" href="#">Home
+                <span class="sr-only">(current)</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">About</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Services</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#">Contact</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Page Content -->
+    <div class="container">
+      <div class="row">
+        <div class="col-lg-12 text-center">
+          <h1 class="mt-5">A Bootstrap 4 Starter Template</h1>
+          <p class="lead">Complete with pre-defined file paths and responsive navigation!</p>
+          <ul class="list-unstyled">
+            <li>Bootstrap 4.0.0-beta</li>
+            <li>jQuery 3.2.1</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript -->
+    <script src="/bootstrap/js/bootstrap.min.js"></script>
+
+  </body>
+
+</html>
