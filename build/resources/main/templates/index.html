@@ -43,7 +43,7 @@
 
       function createVideo(id,src){
 	var html =  '';
-	html += '<div class="col-md-6" id="stream-'+id+'" >';
+	html += '<div class="col-md-4" id="stream-'+id+'" >';
       	html += '<video style="width:100%" src="'+src+'" autoplay="autoplay" ' + (id == 'this' ? 'muted' : '')+  '/>';
 	html += '</div>';
 	$("#streamContainer").append($(html));
@@ -201,7 +201,7 @@
            };
 
            webSocket.onclose = function() {
-              alert("Connection is closed...");
+
            };
 
            window.onbeforeunload = function(event) {

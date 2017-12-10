@@ -31,12 +31,16 @@ SocketHandler extends TextWebSocketHandler {
 		if(message.getTo() == null) {
 			for (WebSocketSession webSocketSession : sessions.values()) {
 				if (!session.equals(webSocketSession)) {
-					webSocketSession.sendMessage(newMessage);
+					synchronized(webSocketSession){
+						webSocketSession.sendMessage(newMessage);
+					}
 				}
 			}
 		} else {
 			WebSocketSession webSocketSession = sessions.get(message.getTo());
-			webSocketSession.sendMessage(newMessage);
+			synchronized(webSocketSession){
+				webSocketSession.sendMessage(newMessage);
+			}
 		}
 	}
 
