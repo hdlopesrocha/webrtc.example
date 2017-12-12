@@ -60,7 +60,7 @@
 
       function startSignalingProtocol(){
           webSocket.send(JSON.stringify({
-             type:'ping'
+             type:'hello'
           }));
       }
 
@@ -167,36 +167,30 @@
               console.log(JSON.stringify(received_msg));
               var received_msg = JSON.parse(evt.data);
               switch(received_msg.type){
-                case 'ping':
-                  createPeerConnection(received_msg.from);
-                  webSocket.send(JSON.stringify({
-                     to:received_msg.from,
-                     type:'pong'
-                  }));
-                break;
-                case 'pong':
+                case 'hello':
                   createPeerConnection(received_msg.from);
                   createOffer(received_msg.from,streams['this']);
                 break;
-		case 'offer':
-		  var rsd = new RTCSessionDescription(received_msg.content);
-		  peerConnections[received_msg.from].setRemoteDescription(rsd, function(){
-		  },console.log);
-		  createAnswer(received_msg.from, streams['this']);
-		break;
-		case 'answer':
-		  var rsd = new RTCSessionDescription(received_msg.content);
-		  peerConnections[received_msg.from].setRemoteDescription(rsd, function(){
-  
-		  },console.log);
- 
-		break;
-		case  'iceCandidate':
-                  var candidate = new RTCIceCandidate(received_msg.content);
-		  peerConnections[received_msg.from].addIceCandidate(candidate, function() {
+								case 'offer':
+									createPeerConnection(received_msg.from);
+									var rsd = new RTCSessionDescription(received_msg.content);
+									peerConnections[received_msg.from].setRemoteDescription(rsd, function(){
+									},console.log);
+									createAnswer(received_msg.from, streams['this']);
+								break;
+								case 'answer':
+									var rsd = new RTCSessionDescription(received_msg.content);
+									peerConnections[received_msg.from].setRemoteDescription(rsd, function(){
 
-		  }, console.log);
-		break;
+									},console.log);
+
+								break;
+								case  'iceCandidate':
+														  var candidate = new RTCIceCandidate(received_msg.content);
+									peerConnections[received_msg.from].addIceCandidate(candidate, function() {
+
+									}, console.log);
+								break;
               }
            };
 
