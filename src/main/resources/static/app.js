@@ -9,7 +9,7 @@ var mediaRequest = {
 
 var constraints ={ mandatory: { OfferToReceiveAudio: true, OfferToReceiveVideo: true } };
 
-function createVideo(id, stream){
+function onStreamArrived(id, stream){
 	var html =  '';
 	html += '<div class="col-md-4" id="stream-'+id+'">';
 	html += '<video id="video-'+id+'" style="width:100%" autoplay="autoplay" ' + (id == 'self' ? 'muted' : '')+  '/>';
@@ -17,10 +17,6 @@ function createVideo(id, stream){
 	$("#streamContainer").append($(html));
 	var video = document.getElementById("video-"+id);
 	video.srcObject = stream;
-}
-
-function onStreamArrived(id, stream){
-	createVideo(id, stream);
 	streams[id] = stream;
 }
 
@@ -31,13 +27,13 @@ function startSignalingProtocol(){
 }
 
 function askPermissionsToShare(){
-	// will ask to intall a plugin there is no compatibility with WebRTC
-	AdapterJS.webRTCReady(function(isUsingPlugin) {
+	// will ask to install a plugin if there is no compatibility with WebRTC
+//	AdapterJS.webRTCReady(function(isUsingPlugin) {
 		navigator.getUserMedia(mediaRequest, function(stream) {
 			onStreamArrived('self', stream);
 			startSignalingProtocol();
 		}, console.log);
-	});
+//	});
 }
 
 function createOffer(id, stream){
@@ -95,11 +91,7 @@ function createPeerConnection(id){
 		}
 	}
 
-    peerConnection.onaddstream = function (e) {
-        onStreamArrived(id, e.stream);
-    };
-
-	peerConnection.onaddstream = function (e) {
+	peerConnection.ontrack = function (e) {
 		onStreamArrived(id, e.stream);
 	};
 
