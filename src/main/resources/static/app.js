@@ -31,10 +31,13 @@ function startSignalingProtocol(){
 }
 
 function askPermissionsToShare(){
-	navigator.getUserMedia(mediaRequest, function(stream) {
-		onStreamArrived('self', stream);
-		startSignalingProtocol();
-	}, console.log);
+	// will ask to intall a plugin there is no compatibility with WebRTC
+	AdapterJS.webRTCReady(function(isUsingPlugin) {
+		navigator.getUserMedia(mediaRequest, function(stream) {
+			onStreamArrived('self', stream);
+			startSignalingProtocol();
+		}, console.log);
+	});
 }
 
 function createOffer(id, stream){

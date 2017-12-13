@@ -1,0 +1,6 @@
+{	
+	"candidate":"candidate:3266095497 1 udp 2122260223 128.141.8.219 47763 typ host generation 0 ufrag /Y2P network-id 1 network-cost 50",
+	"sdpMid":"audio",
+	"sdpMLineIndex":0,"
+	usernameFragment":"/Y2P"
+}
