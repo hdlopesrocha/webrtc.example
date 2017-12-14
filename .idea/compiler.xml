@@ -3,6 +3,8 @@
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
       <module name="webrtc.example_main" target="1.8" />
+      <module name="webrtc.example_no_deprecation_main" target="1.8" />
+      <module name="webrtc.example_no_deprecation_test" target="1.8" />
       <module name="webrtc.example_test" target="1.8" />
     </bytecodeTargetLevel>
   </component>

@@ -9,17 +9,15 @@ var mediaRequest = {
 
 var constraints ={ mandatory: { OfferToReceiveAudio: true, OfferToReceiveVideo: true } };
 
-function onStreamArrived(id, stream){
-    var src = window.URL.createObjectURL(stream);
-    console.log(id, stream, src);
-    var html =  '';
-    html += '<div class="col-md-4" id="stream-'+id+'" >';
-    html += '<video style="width:100%" src="'+src+'" autoplay="autoplay" ' + (id == 'self' ? 'muted' : '')+  '/>';
-    html += '</div>';
-    $("#streamContainer").append($(html));
-    streams[id] = stream;
+function askPermissionsToShare(){
+ 
+	AdapterJS.webRTCReady(function(isUsingPlugin) {
+		navigator.getUserMedia(mediaRequest, function(stream) {
+        		onStreamArrived('self', stream);
+        		startSignalingProtocol();
+		}, console.log);
+	});
 }
-
 
 function startSignalingProtocol(){
 	webSocket.send(JSON.stringify({
@@ -27,11 +25,52 @@ function startSignalingProtocol(){
 	}));
 }
 
-function askPermissionsToShare(){
-    navigator.mediaDevices.getUserMedia(mediaRequest).then(function(stream) {
-        onStreamArrived('self', stream);
-        startSignalingProtocol();
-    }.bind(window)).catch(console.log);
+function createPeerConnection(id){
+	var peerConnection = new RTCPeerConnection({
+		iceServers : [
+			{
+				urls : "stun:stun.iptel.org"
+			},
+			{
+				urls : "stun:stun.ekiga.net"
+			},
+			{
+				urls : "stun:stun.fwdnet.net"
+			},
+			{
+				urls : "stun:stun.ideasip.com"
+			}
+		]
+	});
+
+	peerConnection.onicecandidate = function(event) {
+		if (event.candidate) {
+			webSocket.send(JSON.stringify({
+				to: id,
+            	type : "iceCandidate",
+				content : event.candidate
+			}));
+		}
+	}
+
+	peerConnection.onaddstream = function (e) {
+		onStreamArrived(id, e.stream);
+	};
+
+	peerConnection.oniceconnectionstatechange = function() {
+		if(peerConnection.iceConnectionState == 'disconnected') {
+			$('#stream-'+id).remove();
+		}
+	}
+	peerConnections[id] = peerConnection;
+}
+
+function onStreamArrived(id, stream){
+    var html = '<video class="col-md-4" id="stream-'+id+'" autoplay="autoplay" ' + (id == 'self' ? 'muted' : '')+  '/>';
+    var elem = $(html);
+    $("#streamContainer").append(elem);
+    elem[0].srcObject = stream;
+    streams[id] = stream;
 }
 
 function createOffer(id, stream){
@@ -60,45 +99,6 @@ function createAnswer(id, stream){
 			}));
 		}, console.log);
 	}, console.log,constraints);
-}
-
-function createPeerConnection(id){
-	var peerConnection = new RTCPeerConnection({
-		iceServers : [
-			{
-				urls : "stun:stun.iptel.org"
-			},
-			{
-				urls : "stun:stun.ekiga.net"
-			},
-			{
-				urls : "stun:stun.fwdnet.net"
-			},
-			{
-				urls : "stun:stun.ideasip.com"
-			}
-		]
-	});
-
-	peerConnection.onicecandidate = function(event) {
-		if (event.candidate) {
-			webSocket.send(JSON.stringify({
-				type : "iceCandidate",
-				content : event.candidate
-			}));
-		}
-	}
-
-	peerConnection.onaddstream = function (e) {
-		onStreamArrived(id, e.stream);
-	};
-
-	peerConnection.oniceconnectionstatechange = function() {
-		if(peerConnection.iceConnectionState == 'disconnected') {
-			$('#stream-'+id).remove();
-		}
-	}
-	peerConnections[id] = peerConnection;
 }
 
 function wsurl(s) {

@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/webrtc.example.iml" filepath="$PROJECT_DIR$/webrtc.example.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/webrtc.example_main.iml" filepath="$PROJECT_DIR$/.idea/modules/webrtc.example_main.iml" group="webrtc.example" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/webrtc.example_no_deprecation.iml" filepath="$PROJECT_DIR$/.idea/modules/webrtc.example_no_deprecation.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/webrtc.example_no_deprecation_main.iml" filepath="$PROJECT_DIR$/.idea/modules/webrtc.example_no_deprecation_main.iml" group="webrtc.example_no_deprecation" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/webrtc.example_no_deprecation_test.iml" filepath="$PROJECT_DIR$/.idea/modules/webrtc.example_no_deprecation_test.iml" group="webrtc.example_no_deprecation" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/webrtc.example_test.iml" filepath="$PROJECT_DIR$/.idea/modules/webrtc.example_test.iml" group="webrtc.example" />
     </modules>
   </component>
