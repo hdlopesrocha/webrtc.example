@@ -10,15 +10,16 @@ var mediaRequest = {
 var constraints ={ mandatory: { OfferToReceiveAudio: true, OfferToReceiveVideo: true } };
 
 function onStreamArrived(id, stream){
-	var html =  '';
-	html += '<div class="col-md-4" id="stream-'+id+'">';
-	html += '<video id="video-'+id+'" style="width:100%" autoplay="autoplay" ' + (id == 'self' ? 'muted' : '')+  '/>';
-	html += '</div>';
-	$("#streamContainer").append($(html));
-	var video = document.getElementById("video-"+id);
-	video.srcObject = stream;
-	streams[id] = stream;
+    var src = window.URL.createObjectURL(stream);
+    console.log(id, stream, src);
+    var html =  '';
+    html += '<div class="col-md-4" id="stream-'+id+'" >';
+    html += '<video style="width:100%" src="'+src+'" autoplay="autoplay" ' + (id == 'self' ? 'muted' : '')+  '/>';
+    html += '</div>';
+    $("#streamContainer").append($(html));
+    streams[id] = stream;
 }
+
 
 function startSignalingProtocol(){
 	webSocket.send(JSON.stringify({
@@ -27,13 +28,10 @@ function startSignalingProtocol(){
 }
 
 function askPermissionsToShare(){
-	// will ask to install a plugin if there is no compatibility with WebRTC
-//	AdapterJS.webRTCReady(function(isUsingPlugin) {
-		navigator.getUserMedia(mediaRequest, function(stream) {
-			onStreamArrived('self', stream);
-			startSignalingProtocol();
-		}, console.log);
-//	});
+    navigator.mediaDevices.getUserMedia(mediaRequest).then(function(stream) {
+        onStreamArrived('self', stream);
+        startSignalingProtocol();
+    }.bind(window)).catch(console.log);
 }
 
 function createOffer(id, stream){
@@ -91,7 +89,7 @@ function createPeerConnection(id){
 		}
 	}
 
-	peerConnection.ontrack = function (e) {
+	peerConnection.onaddstream = function (e) {
 		onStreamArrived(id, e.stream);
 	};
 
@@ -130,9 +128,8 @@ $( document ).ready(function() {
 					createPeerConnection(received_msg.from);
 					var rsd = new RTCSessionDescription(received_msg.content);
 					peerConnections[received_msg.from].setRemoteDescription(rsd, function(){
-
+    					createAnswer(received_msg.from, streams['self']);
 					},console.log);
-					createAnswer(received_msg.from, streams['self']);
 					break;
 				case 'answer':
 					var rsd = new RTCSessionDescription(received_msg.content);
