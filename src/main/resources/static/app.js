@@ -1,5 +1,4 @@
 var webSocket;
-var peerConnections = {};
 var streams = {};
 
 var mediaRequest = {
@@ -21,7 +20,7 @@ function askPermissionsToShare(){
 
 function startSignalingProtocol(){
 	webSocket.sendJson({
-		type:'hello'
+		type:'info'
 	});
 }
 
@@ -105,6 +104,8 @@ function wsurl(s) {
 }
 
 $( document ).ready(function() {
+    var peerConnections = {};
+
 	if ("WebSocket" in window){
 		webSocket = new WebSocket(wsurl("/ws"));
 
@@ -118,31 +119,37 @@ $( document ).ready(function() {
 
 		webSocket.onmessage = function (evt) {
 			var received_msg = JSON.parse(evt.data);
-			var pc = peerConnections[received_msg.from];
-			if(received_msg.from && !pc) {
-                pc = peerConnections[received_msg.from] = createPeerConnection(received_msg.from);
-            }
 
 			switch(received_msg.type) {
-				case 'hello':
-					if(streams['self']){
-						createOffer(pc, received_msg.from,streams['self']);
+				case 'info':
+					if(streams['self']) {
+						for(var i in received_msg.content.peers) {
+							var peerId = received_msg.content.peers[i];
+                            var pc = peerConnections[peerId];
+                            if(!pc && peerId !== received_msg.to) {
+                                pc = peerConnections[peerId] = createPeerConnection(peerId);
+                                createOffer(pc, peerId, streams['self']);
+                            }
+                        }
 					}
 					break;
 				case 'offer':
-					var rsd = new RTCSessionDescription(received_msg.content);
+                    var pc = peerConnections[received_msg.from];
+                    var rsd = new RTCSessionDescription(received_msg.content);
                     pc.setRemoteDescription(rsd, function(){
     					createAnswer(pc, received_msg.from, streams['self']);
 					},console.log);
 					break;
 				case 'answer':
-					var rsd = new RTCSessionDescription(received_msg.content);
+                    var pc = peerConnections[received_msg.from];
+                    var rsd = new RTCSessionDescription(received_msg.content);
                     pc.setRemoteDescription(rsd, function(){
 
 					},console.log);
 					break;
 				case  'iceCandidate':
-					var candidate = new RTCIceCandidate(received_msg.content);
+                    var pc = peerConnections[received_msg.from];
+                    var candidate = new RTCIceCandidate(received_msg.content);
                     pc.addIceCandidate(candidate, function() {
 
 					}, console.log);

@@ -21,36 +21,34 @@ SocketHandler extends TextWebSocketHandler {
 
 	@Override
     public void handleTextMessage(final WebSocketSession session, final TextMessage textMessage)
-			throws InterruptedException, IOException {
-		System.out.println(session.getId() + ":"+ textMessage.getPayload());
-		Message message = mapper.readValue(textMessage.getPayload(),Message.class);
-		message.setFrom(session.getId());
+			throws IOException {
+		System.out.println(textMessage.toString());
+		Message message = mapper.readValue(textMessage.getPayload(), Message.class);
 
-		TextMessage newMessage = new TextMessage(mapper.writeValueAsString(message));
-
-		if(message.getTo() == null) {
-			for (WebSocketSession webSocketSession : sessions.values()) {
-				if (!session.equals(webSocketSession)) {
-					synchronized(webSocketSession){
-						webSocketSession.sendMessage(newMessage);
-					}
-				}
-			}
+		if(message.getType().equals("info")) {
+			message.setTo(session.getId());
+			message.setContent(new TreeMap<String, Object>() {{
+				put("peers", sessions.keySet());
+			}});
+			session.sendMessage( new TextMessage(mapper.writeValueAsString(message)));
 		} else {
+			message.setFrom(session.getId());
 			WebSocketSession webSocketSession = sessions.get(message.getTo());
 			synchronized(webSocketSession){
-				webSocketSession.sendMessage(newMessage);
+				webSocketSession.sendMessage(new TextMessage(mapper.writeValueAsString(message)));
 			}
 		}
 	}
 
 	@Override
-	public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+	public void afterConnectionEstablished(WebSocketSession session) {
 		sessions.put(session.getId(), session);
+		System.out.println(session.getId());
+
 	}
 
 	@Override
-	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
 		sessions.remove(session.getId());
 	}
 }

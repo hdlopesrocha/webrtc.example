@@ -9,7 +9,7 @@ public class Message {
 
     private String from;
     private String to;
-    private Map<String,String> content;
+    private Map<String,Object> content;
     private String type;
 
     public String getFrom() {
@@ -36,11 +36,11 @@ public class Message {
         this.type = type;
     }
 
-    public Object getContent() {
+    public Map<String,Object> getContent() {
         return content;
     }
 
-    public void setContent(Map<String,String> content) {
+    public void setContent(Map<String,Object> content) {
         this.content = content;
     }
 }
