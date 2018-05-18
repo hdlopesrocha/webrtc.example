@@ -72,6 +72,10 @@ function onStreamArrived(id, stream){
     streams[id] = stream;
 }
 
+console.log = function(...args) {
+    $("#log").append(JSON.stringify(args)+'<br>');
+}
+
 function createOffer(pc, id, stream){
     pc.addStream(stream);
     pc.createOffer(function (sdp) {
@@ -119,6 +123,7 @@ $( document ).ready(function() {
 
 		webSocket.onmessage = function (evt) {
 			var received_msg = JSON.parse(evt.data);
+            console.log(received_msg);
 
 			switch(received_msg.type) {
 				case 'info':
