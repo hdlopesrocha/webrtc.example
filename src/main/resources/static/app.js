@@ -20,13 +20,13 @@ function askPermissionsToShare(){
 }
 
 function startSignalingProtocol(){
-	webSocket.send(JSON.stringify({
+	webSocket.sendJson({
 		type:'hello'
-	}));
+	});
 }
 
 function createPeerConnection(id){
-	var peerConnection = new RTCPeerConnection({
+	var pc = new RTCPeerConnection({
 		iceServers : [
 			{
 				urls : "stun:stun.iptel.org"
@@ -43,67 +43,65 @@ function createPeerConnection(id){
 		]
 	});
 
-	peerConnection.onicecandidate = function(event) {
+    pc.onicecandidate = function(event) {
 		if (event.candidate) {
-			webSocket.send(JSON.stringify({
+			webSocket.sendJson({
 				to: id,
             	type : "iceCandidate",
 				content : event.candidate
-			}));
+			});
 		}
-	}
+	};
 
-	peerConnection.onaddstream = function (e) {
+    pc.onaddstream = function (e) {
 		onStreamArrived(id, e.stream);
 	};
 
-	peerConnection.oniceconnectionstatechange = function() {
-		if(peerConnection.iceConnectionState == 'disconnected') {
+    pc.oniceconnectionstatechange = function() {
+		if(peerConnection.iceConnectionState === 'disconnected') {
 			$('#stream-'+id).remove();
 		}
-	}
-	peerConnections[id] = peerConnection;
+	};
+	return pc;
 }
 
 function onStreamArrived(id, stream){
-    var html = '<video class="col-md-4" id="stream-'+id+'" autoplay="autoplay" ' + (id == 'self' ? 'muted' : '')+  '/>';
+    var html = '<video class="col-md-4" id="stream-'+id+'" autoplay="autoplay" ' + (id === 'self' ? 'muted' : '')+  '/>';
     var elem = $(html);
     $("#streamContainer").append(elem);
     elem[0].srcObject = stream;
     streams[id] = stream;
 }
 
-function createOffer(id, stream){
-	var peerConnection = peerConnections[id];
-	peerConnection.addStream(stream);
-	peerConnection.createOffer(function (sdp) {
-		peerConnection.setLocalDescription(sdp, function() {
-			webSocket.send(JSON.stringify({
+function createOffer(pc, id, stream){
+    pc.addStream(stream);
+    pc.createOffer(function (sdp) {
+        pc.setLocalDescription(sdp, function() {
+			webSocket.sendJson({
 				to: id,
 				type : "offer",
 				content : sdp
-			}));
+			});
 		}, console.log);
 	}, console.log,constraints);
 }
 
-function createAnswer(id, stream){
-	var peerConnection = peerConnections[id];
-	peerConnection.addStream(stream);
-	peerConnection.createAnswer(function (sdp) {
-		peerConnection.setLocalDescription(sdp, function() {
-			webSocket.send(JSON.stringify({
+function createAnswer(pc, id, stream){
+    pc.addStream(stream);
+    pc.createAnswer(function (sdp) {
+        pc.setLocalDescription(sdp, function() {
+			webSocket.sendJson({
 				to: id,
 				type : "answer",
 				content : sdp
-			}));
+			});
 		}, console.log);
 	}, console.log,constraints);
 }
 
 function wsurl(s) {
 	var l = window.location;
-	return ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + (((l.port != 80) && (l.port != 443)) ? ":" + l.port : "") + s;
+	return ((l.protocol === "https:") ? "wss://" : "ws://") + l.hostname + (((l.port !== 80) && (l.port !== 443)) ? ":" + l.port : "") + s;
 }
 
 $( document ).ready(function() {
@@ -114,32 +112,38 @@ $( document ).ready(function() {
 			askPermissionsToShare();
 		};
 
+        webSocket.sendJson = function(message) {
+            webSocket.send(JSON.stringify(message));
+        };
+
 		webSocket.onmessage = function (evt) {
 			var received_msg = JSON.parse(evt.data);
-			console.log(JSON.stringify(received_msg));
-			switch(received_msg.type){
+			var pc = peerConnections[received_msg.from];
+			if(received_msg.from && !pc) {
+                pc = peerConnections[received_msg.from] = createPeerConnection(received_msg.from);
+            }
+
+			switch(received_msg.type) {
 				case 'hello':
 					if(streams['self']){
-						createPeerConnection(received_msg.from);
-						createOffer(received_msg.from,streams['self']);
+						createOffer(pc, received_msg.from,streams['self']);
 					}
 					break;
 				case 'offer':
-					createPeerConnection(received_msg.from);
 					var rsd = new RTCSessionDescription(received_msg.content);
-					peerConnections[received_msg.from].setRemoteDescription(rsd, function(){
-    					createAnswer(received_msg.from, streams['self']);
+                    pc.setRemoteDescription(rsd, function(){
+    					createAnswer(pc, received_msg.from, streams['self']);
 					},console.log);
 					break;
 				case 'answer':
 					var rsd = new RTCSessionDescription(received_msg.content);
-					peerConnections[received_msg.from].setRemoteDescription(rsd, function(){
+                    pc.setRemoteDescription(rsd, function(){
 
 					},console.log);
 					break;
 				case  'iceCandidate':
 					var candidate = new RTCIceCandidate(received_msg.content);
-					peerConnections[received_msg.from].addIceCandidate(candidate, function() {
+                    pc.addIceCandidate(candidate, function() {
 
 					}, console.log);
 				break;
